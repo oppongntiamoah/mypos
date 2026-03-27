@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Low Stock Alerts{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0 text-danger">
+    <i class="fas fa-exclamation-triangle mr-2"></i>Low Stock Alerts
+    <span class="badge badge-danger ml-2">{{ products|length }}</span>
+  </h4>
+  <div>
+    <a href="{% url 'inventory:purchase_order_add' %}" class="btn btn-info mr-2">
+      <i class="fas fa-truck mr-1"></i>Create Purchase Order
+    </a>
+    <a href="{% url 'inventory:stock_adjustment' %}" class="btn btn-success">
+      <i class="fas fa-plus mr-1"></i>Add Stock
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if products %}
+<div class="alert alert-warning">
+  <i class="fas fa-exclamation-circle mr-1"></i>
+  <strong>{{ products|length }} product{% if products|length != 1 %}s{% endif %}</strong>
+  need{% if products|length == 1 %}s{% endif %} restocking.
+  Consider creating a purchase order for these items.
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th class="text-center">Current Stock</th>
+            <th class="text-center">Reorder Level</th>
+            <th class="text-center">Reorder Qty</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in products %}
+          <tr class="{% if p.stock == 0 %}table-danger{% else %}table-warning{% endif %}">
+            <td>
+              <div class="font-weight-bold">{{ p.name }}</div>
+              {% if p.barcode %}<div class="text-muted small">{{ p.barcode }}</div>{% endif %}
+            </td>
+            <td><span class="badge badge-secondary">{{ p.category.name|default:"—" }}</span></td>
+            <td class="text-center">
+              <span class="badge {% if p.stock == 0 %}badge-danger{% else %}badge-warning text-dark{% endif %} px-3 py-2">
+                {{ p.stock }} {{ p.unit }}
+              </span>
+            </td>
+            <td class="text-center">{{ p.reorder_level }}</td>
+            <td class="text-center font-weight-bold">{{ p.reorder_quantity }}</td>
+            <td>
+              {% if p.stock == 0 %}
+              <span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i>Out of Stock</span>
+              {% else %}
+              <span class="badge badge-warning text-dark"><i class="fas fa-exclamation-circle mr-1"></i>Low Stock</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'inventory:product_edit' p.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5">
+    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+    <h5 class="font-weight-bold text-success">All Stock Levels OK</h5>
+    <p class="text-muted">No products are currently below their reorder levels.</p>
+    <a href="{% url 'inventory:products' %}" class="btn btn-primary mt-2">View All Products</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

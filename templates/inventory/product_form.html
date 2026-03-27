@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ action }} Product{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0">
+    <i class="fas fa-box mr-2 text-primary"></i>{{ action }} Product
+  </h4>
+  <a href="{% url 'inventory:products' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left mr-1"></i>Back
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-md-8">
+              <div class="form-group">
+                <label class="font-weight-bold">Product Name *</label>
+                <input type="text" name="name" class="form-control"
+                       value="{{ product.name|default:'' }}" required placeholder="e.g. Coca Cola 500ml">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="font-weight-bold">Unit</label>
+                <select name="unit" class="form-control">
+                  {% for u in "pcs,kg,g,L,mL,pack,box,carton,dozen,pair"|split:"," %}
+                  <option value="{{ u }}" {% if product.unit == u %}selected{% endif %}>{{ u }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Barcode / SKU</label>
+                <div class="input-group">
+                  <input type="text" name="barcode" class="form-control"
+                         value="{{ product.barcode|default:'' }}" placeholder="Scan or enter barcode">
+                  <div class="input-group-append">
+                    <button type="button" class="btn btn-outline-secondary" id="scan-barcode-btn" title="Scan barcode">
+                      <i class="fas fa-camera"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Category</label>
+                <select name="category" class="form-control">
+                  <option value="">— Select Category —</option>
+                  {% for cat in categories %}
+                  <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="font-weight-bold">Selling Price ({{ settings.currency_symbol }}) *</label>
+                <div class="input-group">
+                  <div class="input-group-prepend"><span class="input-group-text">{{ settings.currency_symbol }}</span></div>
+                  <input type="number" name="price" class="form-control" step="0.01" min="0"
+                         value="{{ product.price|default:'' }}" required placeholder="0.00">
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="font-weight-bold">Cost Price ({{ settings.currency_symbol }})</label>
+                <div class="input-group">
+                  <div class="input-group-prepend"><span class="input-group-text">{{ settings.currency_symbol }}</span></div>
+                  <input type="number" name="cost_price" class="form-control" step="0.01" min="0"
+                         value="{{ product.cost_price|default:'0' }}" placeholder="0.00">
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="font-weight-bold">
+                  {% if action == 'Add' %}Initial Stock{% else %}Current Stock (read-only){% endif %}
+                </label>
+                <input type="number" name="stock" class="form-control" min="0"
+                       value="{{ product.stock|default:'0' }}"
+                       {% if action == 'Edit' %}readonly{% endif %}>
+                {% if action == 'Edit' %}
+                <small class="text-muted">Use <a href="{% url 'inventory:stock_adjustment' %}">Stock Adjustment</a> to change stock</small>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="font-weight-bold">Reorder Level</label>
+                <input type="number" name="reorder_level" class="form-control" min="0"
+                       value="{{ product.reorder_level|default:'10' }}"
+                       title="Alert when stock falls to or below this number">
+                <small class="text-muted">Alert when stock ≤ this value</small>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="font-weight-bold">Reorder Quantity</label>
+                <input type="number" name="reorder_quantity" class="form-control" min="1"
+                       value="{{ product.reorder_quantity|default:'50' }}"
+                       title="Suggested quantity to reorder">
+              </div>
+            </div>
+            {% if action == 'Edit' %}
+            <div class="col-md-4">
+              <div class="form-group">
+                <label class="font-weight-bold">Status</label>
+                <div class="custom-control custom-switch mt-2">
+                  <input type="checkbox" class="custom-control-input" id="is_active" name="is_active"
+                         {% if product.is_active %}checked{% endif %}>
+                  <label class="custom-control-label" for="is_active">Active (visible in POS)</label>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Product Image</label>
+            {% if product.image %}
+            <div class="mb-2">
+              <img src="{{ product.image.url }}" style="height:80px;border-radius:8px;">
+            </div>
+            {% endif %}
+            <input type="file" name="image" class="form-control-file" accept="image/*">
+          </div>
+
+          <hr>
+          <div class="d-flex justify-content-end">
+            <a href="{% url 'inventory:products' %}" class="btn btn-light mr-2">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fas fa-save mr-1"></i>{{ action }} Product
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header font-weight-bold"><i class="fas fa-lightbulb mr-1 text-warning"></i>Tips</div>
+      <div class="card-body">
+        <ul class="mb-0 pl-3 small text-muted">
+          <li class="mb-2">Enter a barcode or scan it using the camera button</li>
+          <li class="mb-2">Set the <strong>Reorder Level</strong> to receive alerts before running out</li>
+          <li class="mb-2">Cost price is used for profit calculations in reports</li>
+          <li class="mb-2">Deactivated products won't appear in the POS terminal</li>
+        </ul>
+      </div>
+    </div>
+    {% if action == 'Edit' and product %}
+    <div class="card mt-3">
+      <div class="card-header font-weight-bold">Stock Info</div>
+      <div class="card-body">
+        <p class="mb-1">Current Stock: <strong class="{% if product.stock == 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-success{% endif %}">{{ product.stock }} {{ product.unit }}</strong></p>
+        <p class="mb-1">Reorder Level: <strong>{{ product.reorder_level }}</strong></p>
+        <p class="mb-0">Last Updated: <span class="text-muted">{{ product.updated_at|date:"d M Y H:i" }}</span></p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

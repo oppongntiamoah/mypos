@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Adjustment{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0"><i class="fas fa-exchange-alt mr-2 text-primary"></i>Stock Adjustment</h4>
+  <a href="{% url 'inventory:stock_movements' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-history mr-1"></i>View History
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header font-weight-bold">Record Stock Movement</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="font-weight-bold">Product *</label>
+            <select name="product" class="form-control" required>
+              <option value="">— Select Product —</option>
+              {% for p in products %}
+              <option value="{{ p.id }}">{{ p.name }} (Current: {{ p.stock }} {{ p.unit }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Location *</label>
+            <select name="location" class="form-control" required>
+              <option value="">— Select Location —</option>
+              {% for l in locations %}
+              <option value="{{ l.id }}" {% if l.is_main %}selected{% endif %}>
+                {{ l.name }}{% if l.is_main %} (Main){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Movement Type *</label>
+            <select name="movement_type" class="form-control" required id="movement-type">
+              {% for val, label in movement_types %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Quantity *</label>
+            <input type="number" name="quantity" class="form-control" required min="1"
+                   placeholder="Enter quantity">
+            <small class="text-muted" id="qty-hint">
+              Enter positive number for stock in, negative for stock out.
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label class="font-weight-bold">Notes</label>
+            <textarea name="notes" class="form-control" rows="3"
+                      placeholder="Reason for adjustment, reference number, etc."></textarea>
+          </div>
+
+          <div class="d-flex justify-content-end">
+            <a href="{% url 'inventory:index' %}" class="btn btn-light mr-2">Cancel</a>
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="fas fa-save mr-1"></i>Record Movement
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header font-weight-bold"><i class="fas fa-info-circle mr-1"></i>Movement Types</div>
+      <div class="card-body">
+        <dl class="mb-0">
+          <dt class="text-success">Purchase / Received</dt>
+          <dd class="text-muted small mb-2">Stock received from supplier</dd>
+          <dt class="text-danger">Sale</dt>
+          <dd class="text-muted small mb-2">Stock sold (auto-updated by POS)</dd>
+          <dt class="text-info">Transfer In / Out</dt>
+          <dd class="text-muted small mb-2">Move stock between locations</dd>
+          <dt class="text-warning">Adjustment</dt>
+          <dd class="text-muted small mb-2">Manual correction after stocktake</dd>
+          <dt class="text-success">Return</dt>
+          <dd class="text-muted small mb-0">Customer or supplier returns</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales History{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0"><i class="fas fa-receipt mr-2 text-primary"></i>Sales History</h4>
+  <a href="{% url 'pos:index' %}" class="btn btn-primary"><i class="fas fa-plus mr-1"></i>New Sale</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="form-inline">
+      <div class="form-group mr-2">
+        <label class="mr-1 small font-weight-bold">From</label>
+        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request.GET.date_from }}">
+      </div>
+      <div class="form-group mr-2">
+        <label class="mr-1 small font-weight-bold">To</label>
+        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request.GET.date_to }}">
+      </div>
+      <div class="form-group mr-2">
+        <select name="payment" class="form-control form-control-sm">
+          <option value="">All Payments</option>
+          {% for val, label in payment_methods %}
+          <option value="{{ val }}" {% if request.GET.payment == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-sm btn-primary mr-2"><i class="fas fa-filter mr-1"></i>Filter</button>
+      <a href="{% url 'pos:sales_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </form>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-3">
+  <div class="col-md-4">
+    <div class="card border-0" style="background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;">
+      <div class="card-body py-3">
+        <p class="mb-0 small opacity-75">Total Revenue</p>
+        <h4 class="font-weight-bold mb-0">{{ settings.currency_symbol }}{{ total_revenue|floatformat:2 }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;">
+      <div class="card-body py-3">
+        <p class="mb-0 small opacity-75">Total Transactions</p>
+        <h4 class="font-weight-bold mb-0">{{ sales|length }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0" style="background:linear-gradient(135deg,#d97706,#b45309);color:#fff;">
+      <div class="card-body py-3">
+        <p class="mb-0 small opacity-75">Avg Transaction</p>
+        <h4 class="font-weight-bold mb-0">
+          {% if sales %}{{ settings.currency_symbol }}{% widthratio total_revenue sales|length 1 %}{% else %}—{% endif %}
+        </h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Receipt #</th>
+            <th>Date & Time</th>
+            <th>Customer</th>
+            <th>Cashier</th>
+            <th>Items</th>
+            <th>Payment</th>
+            <th class="text-right">Total</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in sales %}
+          <tr>
+            <td class="font-weight-bold text-primary">{{ sale.receipt_number }}</td>
+            <td class="text-muted small">{{ sale.created_at|date:"d M Y H:i" }}</td>
+            <td>{{ sale.customer.name|default:"Walk-in" }}</td>
+            <td>{{ sale.cashier.username|default:"—" }}</td>
+            <td class="text-center"><span class="badge badge-secondary">{{ sale.items.count }}</span></td>
+            <td>
+              {% if sale.payment_method == 'cash' %}<span class="badge badge-success">Cash</span>
+              {% elif sale.payment_method == 'card' %}<span class="badge badge-primary">Card</span>
+              {% elif sale.payment_method == 'mtn_momo' %}<span class="badge badge-warning text-dark">MTN MoMo</span>
+              {% elif sale.payment_method == 'vodafone_cash' %}<span class="badge badge-danger">Vodafone</span>
+              {% elif sale.payment_method == 'airteltigo' %}<span class="badge badge-info">AirtelTigo</span>
+              {% else %}<span class="badge badge-secondary">{{ sale.get_payment_method_display }}</span>
+              {% endif %}
+            </td>
+            <td class="text-right font-weight-bold">{{ settings.currency_symbol }}{{ sale.total|floatformat:2 }}</td>
+            <td>
+              {% if sale.status == 'completed' %}<span class="badge badge-success">Completed</span>
+              {% elif sale.status == 'voided' %}<span class="badge badge-danger">Voided</span>
+              {% else %}<span class="badge badge-secondary">{{ sale.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'pos:receipt' sale.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-receipt"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="fas fa-receipt fa-2x mb-2"></i><p>No sales found</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block page_header %}
+<h4 class="font-weight-bold mb-0"><i class="fas fa-sliders-h mr-2 text-primary"></i>System Settings</h4>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="row">
+    <!-- Business Info -->
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header font-weight-bold"><i class="fas fa-store mr-1 text-primary"></i>Business Information</div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="font-weight-bold">Business Name *</label>
+            <input type="text" name="business_name" class="form-control" value="{{ settings.business_name }}" required>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold">Address</label>
+            <textarea name="business_address" class="form-control" rows="2">{{ settings.business_address }}</textarea>
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Phone</label>
+                <input type="text" name="business_phone" class="form-control" value="{{ settings.business_phone }}">
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Email</label>
+                <input type="email" name="business_email" class="form-control" value="{{ settings.business_email }}">
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold">Business Logo</label>
+            {% if settings.business_logo %}
+            <div class="mb-2"><img src="{{ settings.business_logo.url }}" style="height:50px;border-radius:6px;"></div>
+            {% endif %}
+            <input type="file" name="business_logo" class="form-control-file" accept="image/*">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tax & Currency -->
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header font-weight-bold"><i class="fas fa-percent mr-1 text-warning"></i>Tax & Currency</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Currency Code</label>
+                <select name="currency" class="form-control">
+                  <option value="GHS" {% if settings.currency == 'GHS' %}selected{% endif %}>GHS — Ghana Cedi</option>
+                  <option value="USD" {% if settings.currency == 'USD' %}selected{% endif %}>USD — US Dollar</option>
+                  <option value="EUR" {% if settings.currency == 'EUR' %}selected{% endif %}>EUR — Euro</option>
+                  <option value="GBP" {% if settings.currency == 'GBP' %}selected{% endif %}>GBP — British Pound</option>
+                  <option value="NGN" {% if settings.currency == 'NGN' %}selected{% endif %}>NGN — Nigerian Naira</option>
+                  <option value="KES" {% if settings.currency == 'KES' %}selected{% endif %}>KES — Kenyan Shilling</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Currency Symbol</label>
+                <input type="text" name="currency_symbol" class="form-control" value="{{ settings.currency_symbol }}" maxlength="5">
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Tax Name</label>
+                <input type="text" name="tax_name" class="form-control" value="{{ settings.tax_name }}" placeholder="e.g. VAT, GST">
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-group">
+                <label class="font-weight-bold">Tax Rate (%)</label>
+                <div class="input-group">
+                  <input type="number" name="tax_rate" class="form-control" step="0.01" min="0" max="100"
+                         value="{{ settings.tax_rate }}">
+                  <div class="input-group-append"><span class="input-group-text">%</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold">Receipt Footer Message</label>
+            <input type="text" name="receipt_footer" class="form-control" value="{{ settings.receipt_footer }}"
+                   placeholder="Thank you for shopping with us!">
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold">Low Stock Alert Threshold</label>
+            <input type="number" name="low_stock_threshold" class="form-control" min="0"
+                   value="{{ settings.low_stock_threshold }}">
+            <small class="text-muted">Default reorder level for new products</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Money -->
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header font-weight-bold">
+          <i class="fas fa-mobile-alt mr-1 text-success"></i>Mobile Money (Ghana)
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info py-2 small">
+            <i class="fas fa-info-circle mr-1"></i>
+            Enter your merchant numbers so customers know where to send mobile money payments.
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold">
+              <span class="text-warning"><i class="fas fa-mobile-alt mr-1"></i>MTN Mobile Money Number</span>
+            </label>
+            <input type="text" name="mtn_momo_number" class="form-control"
+                   value="{{ settings.mtn_momo_number }}" placeholder="024XXXXXXX or 059XXXXXXX">
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold">
+              <span class="text-danger"><i class="fas fa-mobile-alt mr-1"></i>Vodafone Cash Number</span>
+            </label>
+            <input type="text" name="vodafone_cash_number" class="form-control"
+                   value="{{ settings.vodafone_cash_number }}" placeholder="020XXXXXXX or 050XXXXXXX">
+          </div>
+          <div class="form-group">
+            <label class="font-weight-bold">
+              <span class="text-info"><i class="fas fa-mobile-alt mr-1"></i>AirtelTigo Money Number</span>
+            </label>
+            <input type="text" name="airteltigo_number" class="form-control"
+                   value="{{ settings.airteltigo_number }}" placeholder="027XXXXXXX or 057XXXXXXX">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POS Options -->
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header font-weight-bold"><i class="fas fa-cash-register mr-1 text-primary"></i>POS Options</div>
+        <div class="card-body">
+          <div class="custom-control custom-switch mb-3">
+            <input type="checkbox" class="custom-control-input" id="barcode_toggle" name="enable_barcode_scanner"
+                   {% if settings.enable_barcode_scanner %}checked{% endif %}>
+            <label class="custom-control-label" for="barcode_toggle">
+              Enable Camera Barcode Scanner
+            </label>
+          </div>
+
+          <div class="alert alert-light border mt-3 py-2">
+            <p class="mb-1 small font-weight-bold">Current Settings Preview:</p>
+            <p class="mb-0 small">
+              <i class="fas fa-tag mr-1 text-muted"></i>
+              Tax: <strong>{{ settings.tax_name }} {{ settings.tax_rate }}%</strong><br>
+              <i class="fas fa-money-bill mr-1 text-muted"></i>
+              Currency: <strong>{{ settings.currency_symbol }} {{ settings.currency }}</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-end mb-3">
+    <button type="submit" class="btn btn-primary btn-lg px-5">
+      <i class="fas fa-save mr-2"></i>Save Settings
+    </button>
+  </div>
+</form>
+{% endblock %}

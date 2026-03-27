@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}New Purchase Order{% endblock %}
+{% block extra_css %}
+<style>
+  .po-item-row td { padding: .4rem .5rem; vertical-align: middle; }
+</style>
+{% endblock %}
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0"><i class="fas fa-truck mr-2 text-primary"></i>New Purchase Order</h4>
+  <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-secondary">Back</a>
+</div>
+{% endblock %}
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card mb-3">
+        <div class="card-header font-weight-bold">Order Details</div>
+        <div class="card-body">
+          <div class="form-group"><label class="font-weight-bold">Supplier *</label>
+            <select name="supplier" class="form-control" required>
+              <option value="">— Select Supplier —</option>
+              {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+            </select></div>
+          <div class="form-group"><label class="font-weight-bold">Deliver to Location</label>
+            <select name="location" class="form-control">
+              <option value="">— Any Location —</option>
+              {% for l in locations %}<option value="{{ l.id }}" {% if l.is_main %}selected{% endif %}>{{ l.name }}</option>{% endfor %}
+            </select></div>
+          <div class="form-group"><label>Expected Delivery Date</label>
+            <input type="date" name="expected_date" class="form-control"></div>
+          <div class="form-group"><label>Notes</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Instructions for supplier..."></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="font-weight-bold">Order Items</span>
+          <button type="button" class="btn btn-sm btn-success" id="add-row">
+            <i class="fas fa-plus mr-1"></i>Add Product
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table mb-0" id="po-items-table">
+              <thead><tr><th>Product</th><th class="text-center">Qty</th><th class="text-right">Unit Cost ({{ settings.currency_symbol }})</th><th class="text-right">Total</th><th></th></tr></thead>
+              <tbody id="po-items-body">
+                <tr class="po-item-row" id="row-template">
+                  <td><select name="product_id" class="form-control form-control-sm product-select" required>
+                    <option value="">— Select Product —</option>
+                    {% for p in products %}<option value="{{ p.id }}" data-cost="{{ p.cost_price }}">{{ p.name }} ({{ p.stock }} {{ p.unit }})</option>{% endfor %}
+                  </select></td>
+                  <td><input type="number" name="quantity" class="form-control form-control-sm qty-input" min="1" value="1" required style="width:70px;"></td>
+                  <td><input type="number" name="unit_cost" class="form-control form-control-sm cost-input" step="0.01" min="0" value="0.00" required style="width:90px;"></td>
+                  <td class="text-right font-weight-bold row-total">{{ settings.currency_symbol }}0.00</td>
+                  <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="fas fa-times"></i></button></td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="text-right font-weight-bold">Order Total</td>
+                  <td class="text-right font-weight-bold text-primary" id="po-total">{{ settings.currency_symbol }}0.00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+          <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-light mr-2">Cancel</a>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="fas fa-save mr-1"></i>Create Purchase Order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+const SYM = '{{ settings.currency_symbol }}';
+function calcRowTotal(row) {
+  const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+  const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+  row.querySelector('.row-total').textContent = SYM + (qty * cost).toFixed(2);
+  updateGrandTotal();
+}
+function updateGrandTotal() {
+  let total = 0;
+  document.querySelectorAll('.row-total').forEach(el => {
+    total += parseFloat(el.textContent.replace(SYM,'')) || 0;
+  });
+  document.getElementById('po-total').textContent = SYM + total.toFixed(2);
+}
+document.getElementById('add-row').addEventListener('click', function() {
+  const tbody = document.getElementById('po-items-body');
+  const template = document.querySelector('.po-item-row').cloneNode(true);
+  template.querySelector('.product-select').value = '';
+  template.querySelector('.qty-input').value = 1;
+  template.querySelector('.cost-input').value = '0.00';
+  template.querySelector('.row-total').textContent = SYM + '0.00';
+  tbody.appendChild(template);
+  bindRow(template);
+});
+function bindRow(row) {
+  row.querySelector('.remove-row').addEventListener('click', function() {
+    if (document.querySelectorAll('.po-item-row').length > 1) {
+      row.remove(); updateGrandTotal();
+    }
+  });
+  row.querySelector('.product-select').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const cost = opt.getAttribute('data-cost') || '0';
+    row.querySelector('.cost-input').value = parseFloat(cost).toFixed(2);
+    calcRowTotal(row);
+  });
+  row.querySelector('.qty-input').addEventListener('input', () => calcRowTotal(row));
+  row.querySelector('.cost-input').addEventListener('input', () => calcRowTotal(row));
+}
+document.querySelectorAll('.po-item-row').forEach(bindRow);
+</script>
+{% endblock %}

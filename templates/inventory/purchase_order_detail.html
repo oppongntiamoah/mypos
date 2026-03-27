@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}{{ order.order_number }}{% endblock %}
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0"><i class="fas fa-truck mr-2 text-primary"></i>{{ order.order_number }}</h4>
+  <div>
+    <a href="{% url 'inventory:purchase_orders' %}" class="btn btn-outline-secondary">Back</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header font-weight-bold">Order Items</div>
+      <div class="card-body p-0">
+        {% if order.status not in 'received,cancelled' %}
+        <form method="post" action="{% url 'inventory:purchase_order_receive' order.pk %}">
+          {% csrf_token %}
+          <table class="table mb-0">
+            <thead><tr><th>Product</th><th class="text-center">Ordered</th><th class="text-center">Received</th><th class="text-center">Receive Now</th><th class="text-right">Unit Cost</th><th class="text-right">Total</th></tr></thead>
+            <tbody>
+              {% for item in order.items.all %}
+              <tr>
+                <td class="font-weight-bold">{{ item.product.name }}</td>
+                <td class="text-center">{{ item.ordered_quantity }}</td>
+                <td class="text-center text-success">{{ item.received_quantity }}</td>
+                <td class="text-center">
+                  <input type="number" name="received_{{ item.pk }}" class="form-control form-control-sm text-center"
+                         min="0" max="{{ item.ordered_quantity }}" value="{{ item.ordered_quantity|add:item.received_quantity|add:'-'|add:item.received_quantity }}"
+                         style="width:80px;display:inline-block;">
+                </td>
+                <td class="text-right">{{ settings.currency_symbol }}{{ item.unit_cost|floatformat:2 }}</td>
+                <td class="text-right font-weight-bold">{{ settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr><td colspan="5" class="text-right font-weight-bold">Total</td>
+                <td class="text-right font-weight-bold text-primary">{{ settings.currency_symbol }}{{ order.total|floatformat:2 }}</td></tr>
+            </tfoot>
+          </table>
+          <div class="card-footer">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-check mr-1"></i>Confirm Stock Received
+            </button>
+          </div>
+        </form>
+        {% else %}
+        <table class="table mb-0">
+          <thead><tr><th>Product</th><th class="text-center">Ordered</th><th class="text-center">Received</th><th class="text-right">Unit Cost</th><th class="text-right">Total</th></tr></thead>
+          <tbody>
+            {% for item in order.items.all %}
+            <tr>
+              <td class="font-weight-bold">{{ item.product.name }}</td>
+              <td class="text-center">{{ item.ordered_quantity }}</td>
+              <td class="text-center text-success">{{ item.received_quantity }}</td>
+              <td class="text-right">{{ settings.currency_symbol }}{{ item.unit_cost|floatformat:2 }}</td>
+              <td class="text-right font-weight-bold">{{ settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4" class="text-right font-weight-bold">Total</td>
+              <td class="text-right font-weight-bold text-primary">{{ settings.currency_symbol }}{{ order.total|floatformat:2 }}</td></tr>
+          </tfoot>
+        </table>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header font-weight-bold">Order Info</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5 text-muted small">Supplier</dt><dd class="col-7 small">{{ order.supplier.name }}</dd>
+          <dt class="col-5 text-muted small">Location</dt><dd class="col-7 small">{{ order.location.name|default:"—" }}</dd>
+          <dt class="col-5 text-muted small">Status</dt>
+          <dd class="col-7">
+            {% if order.status == 'draft' %}<span class="badge badge-secondary">Draft</span>
+            {% elif order.status == 'sent' %}<span class="badge badge-primary">Sent</span>
+            {% elif order.status == 'partial' %}<span class="badge badge-warning text-dark">Partial</span>
+            {% elif order.status == 'received' %}<span class="badge badge-success">Received</span>
+            {% elif order.status == 'cancelled' %}<span class="badge badge-danger">Cancelled</span>{% endif %}
+          </dd>
+          <dt class="col-5 text-muted small">Expected</dt><dd class="col-7 small">{{ order.expected_date|date:"d M Y"|default:"—" }}</dd>
+          <dt class="col-5 text-muted small">Created</dt><dd class="col-7 small">{{ order.created_at|date:"d M Y H:i" }}</dd>
+          <dt class="col-5 text-muted small">By</dt><dd class="col-7 small">{{ order.created_by.username|default:"—" }}</dd>
+          {% if order.notes %}
+          <dt class="col-5 text-muted small">Notes</dt><dd class="col-7 small">{{ order.notes }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

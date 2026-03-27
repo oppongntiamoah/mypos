@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Stock Movements{% endblock %}
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0"><i class="fas fa-history mr-2 text-primary"></i>Stock Movement History</h4>
+  <a href="{% url 'inventory:stock_adjustment' %}" class="btn btn-primary">
+    <i class="fas fa-plus mr-1"></i>New Adjustment
+  </a>
+</div>
+{% endblock %}
+{% block content %}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="form-inline">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm mr-2"
+             placeholder="Search product or reference...">
+      <button type="submit" class="btn btn-sm btn-primary mr-2">
+        <i class="fas fa-search mr-1"></i>Search
+      </button>
+      <a href="{% url 'inventory:stock_movements' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr><th>Product</th><th>Location</th><th>Type</th><th class="text-center">Qty</th>
+            <th>Reference</th><th>By</th><th>Date</th></tr>
+        </thead>
+        <tbody>
+          {% for m in movements %}
+          <tr>
+            <td class="font-weight-bold small">{{ m.product.name }}</td>
+            <td class="text-muted small">{{ m.location.name }}</td>
+            <td><span class="badge badge-{% if m.quantity > 0 %}success{% else %}danger{% endif %}">
+              {{ m.get_movement_type_display }}</span></td>
+            <td class="text-center font-weight-bold {% if m.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+              {% if m.quantity > 0 %}+{% endif %}{{ m.quantity }}
+            </td>
+            <td class="text-muted small">{{ m.reference|default:"—" }}</td>
+            <td class="small">{{ m.created_by.username|default:"System" }}</td>
+            <td class="text-muted small">{{ m.created_at|date:"d M Y H:i" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center py-4 text-muted">No movements recorded</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

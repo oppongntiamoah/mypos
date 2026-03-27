@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ app_settings.business_name }} POS{% endblock %}</title>
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <!-- AdminLTE -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
+  <style>
+    :root {
+      --pos-primary: #2563eb;
+      --pos-success: #16a34a;
+      --pos-danger: #dc2626;
+      --pos-warning: #d97706;
+    }
+    body { font-family: 'Inter', sans-serif; }
+    .brand-link { background: #1e40af !important; }
+    .brand-link .brand-text { font-weight: 700; font-size: 1.1rem; }
+    .nav-sidebar .nav-link.active { background: rgba(255,255,255,0.15) !important; }
+    .nav-sidebar .nav-link:hover { background: rgba(255,255,255,0.1) !important; }
+    .sidebar-dark-primary { background: #1e3a5f !important; }
+    .sidebar-dark-primary .nav-sidebar .nav-link { color: rgba(255,255,255,0.85) !important; }
+    .sidebar-dark-primary .nav-sidebar .nav-link i { color: rgba(255,255,255,0.65) !important; }
+    .sidebar-dark-primary .nav-sidebar .nav-item.menu-open > .nav-link { background: rgba(255,255,255,0.1) !important; }
+    .main-header.navbar { border-bottom: 1px solid #e5e7eb; }
+    .content-wrapper { background: #f8fafc; }
+    .card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 10px; }
+    .card-header { border-bottom: 1px solid #f1f5f9; border-radius: 10px 10px 0 0 !important; }
+    .btn { border-radius: 6px; font-weight: 500; }
+    .badge { font-size: 0.75rem; }
+    .low-stock-badge { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .nav-pills .nav-link.active { background-color: var(--pos-primary); }
+    .table th { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{% url 'pos:index' %}" class="nav-link">
+          <i class="fas fa-cash-register mr-1"></i> POS Terminal
+        </a>
+      </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      <!-- Low stock alert -->
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'inventory:low_stock' %}"
+           hx-get="{% url 'inventory:low_stock_count' %}"
+           hx-trigger="load, every 60s"
+           hx-target="#low-stock-badge">
+          <i class="fas fa-exclamation-triangle text-warning"></i>
+          <span id="low-stock-badge"></span>
+        </a>
+      </li>
+      <!-- User menu -->
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">
+          <i class="fas fa-user-circle mr-1"></i>
+          {{ request.user.get_full_name|default:request.user.username }}
+        </a>
+        <div class="dropdown-menu dropdown-menu-right">
+          <a class="dropdown-item" href="{% url 'accounts:profile' %}">
+            <i class="fas fa-user mr-2"></i> Profile
+          </a>
+          {% if request.user.is_staff %}
+          <a class="dropdown-item" href="{% url 'accounts:users' %}">
+            <i class="fas fa-users mr-2"></i> Users
+          </a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="/admin/">
+            <i class="fas fa-cog mr-2"></i> Django Admin
+          </a>
+          {% endif %}
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}">
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </a>
+        </div>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Sidebar -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a href="/" class="brand-link text-center">
+      {% if app_settings.business_logo %}
+        <img src="{{ app_settings.business_logo.url }}" alt="Logo" class="brand-image img-circle elevation-3" style="opacity:.8; max-height:33px;">
+      {% else %}
+        <i class="fas fa-cash-register brand-image" style="font-size:1.5rem; opacity:.8;"></i>
+      {% endif %}
+      <span class="brand-text font-weight-bold">{{ app_settings.business_name }}</span>
+    </a>
+    <div class="sidebar">
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+
+          <li class="nav-header">SALES</li>
+
+          <li class="nav-item">
+            <a href="{% url 'pos:index' %}" class="nav-link {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}active{% endif %}">
+              <i class="nav-icon fas fa-cash-register"></i>
+              <p>POS Terminal</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'pos:sales_list' %}" class="nav-link {% if request.resolver_match.url_name == 'sales_list' %}active{% endif %}">
+              <i class="nav-icon fas fa-receipt"></i>
+              <p>Sales History</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'pos:customers' %}" class="nav-link {% if request.resolver_match.url_name == 'customers' %}active{% endif %}">
+              <i class="nav-icon fas fa-users"></i>
+              <p>Customers</p>
+            </a>
+          </li>
+
+          <li class="nav-header">INVENTORY</li>
+
+          <li class="nav-item">
+            <a href="{% url 'inventory:index' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'index' %}active{% endif %}">
+              <i class="nav-icon fas fa-boxes"></i>
+              <p>Overview</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'inventory:products' %}" class="nav-link {% if request.resolver_match.url_name == 'products' %}active{% endif %}">
+              <i class="nav-icon fas fa-box"></i>
+              <p>Products</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'inventory:low_stock' %}" class="nav-link {% if request.resolver_match.url_name == 'low_stock' %}active{% endif %}">
+              <i class="nav-icon fas fa-exclamation-triangle text-warning"></i>
+              <p>Low Stock Alerts</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'inventory:stock_adjustment' %}" class="nav-link {% if request.resolver_match.url_name == 'stock_adjustment' %}active{% endif %}">
+              <i class="nav-icon fas fa-exchange-alt"></i>
+              <p>Stock Adjustment</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'inventory:purchase_orders' %}" class="nav-link {% if request.resolver_match.url_name == 'purchase_orders' %}active{% endif %}">
+              <i class="nav-icon fas fa-truck"></i>
+              <p>Purchase Orders</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'inventory:suppliers' %}" class="nav-link {% if request.resolver_match.url_name == 'suppliers' %}active{% endif %}">
+              <i class="nav-icon fas fa-building"></i>
+              <p>Suppliers</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'inventory:locations' %}" class="nav-link {% if request.resolver_match.url_name == 'locations' %}active{% endif %}">
+              <i class="nav-icon fas fa-map-marker-alt"></i>
+              <p>Locations</p>
+            </a>
+          </li>
+
+          <li class="nav-header">REPORTS</li>
+
+          <li class="nav-item">
+            <a href="{% url 'reports:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'reports' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+              <i class="nav-icon fas fa-chart-line"></i>
+              <p>Dashboard</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'reports:sales' %}" class="nav-link {% if request.resolver_match.url_name == 'sales' and request.resolver_match.app_name == 'reports' %}active{% endif %}">
+              <i class="nav-icon fas fa-chart-bar"></i>
+              <p>Sales Report</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'reports:inventory' %}" class="nav-link {% if request.resolver_match.url_name == 'inventory' %}active{% endif %}">
+              <i class="nav-icon fas fa-chart-pie"></i>
+              <p>Inventory Report</p>
+            </a>
+          </li>
+
+          <li class="nav-header">SYSTEM</li>
+
+          <li class="nav-item">
+            <a href="{% url 'settings_app:settings' %}" class="nav-link {% if request.resolver_match.app_name == 'settings_app' %}active{% endif %}">
+              <i class="nav-icon fas fa-sliders-h"></i>
+              <p>Settings</p>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Content Wrapper -->
+  <div class="content-wrapper">
+    <div class="content-header">
+      <div class="container-fluid">
+        {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show mt-2" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert">
+              <span>&times;</span>
+            </button>
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% block page_header %}{% endblock %}
+      </div>
+    </div>
+    <div class="content">
+      <div class="container-fluid">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="main-footer text-sm">
+    <strong>{{ app_settings.business_name }}</strong> &mdash; MyPOS System &copy; {% now "Y" %}
+    <div class="float-right d-none d-sm-inline-block">
+      <b>{{ app_settings.currency_symbol }}</b> {{ app_settings.currency }} &bull; VAT {{ app_settings.tax_rate }}%
+    </div>
+  </footer>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE -->
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/js/adminlte.min.js"></script>
+<!-- HTMX -->
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script>
+  // HTMX CSRF setup
+  document.body.addEventListener('htmx:configRequest', function(e) {
+    e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+  });
+  // Auto-dismiss alerts
+  setTimeout(function() {
+    $('.alert').fadeOut('slow');
+  }, 4000);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

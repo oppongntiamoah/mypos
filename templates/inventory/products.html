@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Products — Inventory{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0"><i class="fas fa-box mr-2 text-primary"></i>Products</h4>
+  <a href="{% url 'inventory:product_add' %}" class="btn btn-primary">
+    <i class="fas fa-plus mr-1"></i>Add Product
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="form-inline flex-wrap">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm mr-2 mb-1"
+             placeholder="Search name or barcode..." style="width:220px;">
+      <select name="category" class="form-control form-control-sm mr-2 mb-1">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="stock" class="form-control form-control-sm mr-2 mb-1">
+        <option value="">All Stock</option>
+        <option value="low" {% if request.GET.stock == 'low' %}selected{% endif %}>Low Stock</option>
+        <option value="out" {% if request.GET.stock == 'out' %}selected{% endif %}>Out of Stock</option>
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary mr-2 mb-1"><i class="fas fa-search mr-1"></i>Search</button>
+      <a href="{% url 'inventory:products' %}" class="btn btn-sm btn-outline-secondary mb-1">Clear</a>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Barcode</th>
+            <th>Category</th>
+            <th class="text-right">Price</th>
+            <th class="text-right">Cost</th>
+            <th class="text-center">Stock</th>
+            <th class="text-center">Reorder Level</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in products %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center">
+                {% if p.image %}
+                <img src="{{ p.image.url }}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;" class="mr-2">
+                {% else %}
+                <div style="width:36px;height:36px;border-radius:6px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;" class="mr-2">
+                  <i class="fas fa-box text-white" style="font-size:.8rem;"></i>
+                </div>
+                {% endif %}
+                <div>
+                  <div class="font-weight-bold">{{ p.name }}</div>
+                  <div class="text-muted small">{{ p.unit }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted small">{{ p.barcode|default:"—" }}</td>
+            <td><span class="badge badge-secondary">{{ p.category.name|default:"Uncategorised" }}</span></td>
+            <td class="text-right font-weight-bold">{{ settings.currency_symbol }}{{ p.price|floatformat:2 }}</td>
+            <td class="text-right text-muted">{{ settings.currency_symbol }}{{ p.cost_price|floatformat:2 }}</td>
+            <td class="text-center">
+              <span class="badge px-2 py-1 {% if p.stock == 0 %}badge-danger{% elif p.is_low_stock %}badge-warning{% else %}badge-success{% endif %}">
+                {{ p.stock }}
+              </span>
+            </td>
+            <td class="text-center text-muted">{{ p.reorder_level }}</td>
+            <td>
+              {% if p.is_active %}
+              <span class="badge badge-success">Active</span>
+              {% else %}
+              <span class="badge badge-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'inventory:product_edit' p.pk %}" class="btn btn-sm btn-outline-primary mr-1">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form method="post" action="{% url 'inventory:product_delete' p.pk %}" class="d-inline"
+                    onsubmit="return confirm('Deactivate {{ p.name }}?')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="fas fa-ban"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-5 text-muted">
+              <i class="fas fa-box-open fa-2x mb-2"></i><p>No products found.
+              <a href="{% url 'inventory:product_add' %}">Add your first product</a></p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Sale #{{ sale.receipt_number }}{% endblock %}
+{% block page_header %}
+<div class="d-flex justify-content-between">
+  <h4 class="font-weight-bold mb-0">Sale #{{ sale.receipt_number }}</h4>
+  <div>
+    <a href="{% url 'pos:receipt' sale.id %}" class="btn btn-outline-secondary mr-2">
+      <i class="fas fa-receipt mr-1"></i>View Receipt
+    </a>
+    <a href="{% url 'pos:sales_list' %}" class="btn btn-secondary">Back</a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header font-weight-bold">Items</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead><tr><th>Product</th><th class="text-center">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr></thead>
+          <tbody>
+            {% for item in sale.items.all %}
+            <tr>
+              <td>{{ item.product_name }}</td>
+              <td class="text-center">{{ item.quantity }}</td>
+              <td class="text-right">{{ settings.currency_symbol }}{{ item.unit_price|floatformat:2 }}</td>
+              <td class="text-right font-weight-bold">{{ settings.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="bg-light">
+            <tr><td colspan="3" class="text-right text-muted">Subtotal</td><td class="text-right">{{ settings.currency_symbol }}{{ sale.subtotal|floatformat:2 }}</td></tr>
+            {% if sale.discount > 0 %}<tr class="text-danger"><td colspan="3" class="text-right">Discount</td><td class="text-right">-{{ settings.currency_symbol }}{{ sale.discount|floatformat:2 }}</td></tr>{% endif %}
+            <tr><td colspan="3" class="text-right text-muted">{{ settings.tax_name }} {{ sale.tax_rate }}%</td><td class="text-right">{{ settings.currency_symbol }}{{ sale.tax_amount|floatformat:2 }}</td></tr>
+            <tr class="font-weight-bold"><td colspan="3" class="text-right">TOTAL</td><td class="text-right text-primary" style="font-size:1.1rem;">{{ settings.currency_symbol }}{{ sale.total|floatformat:2 }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header font-weight-bold">Sale Info</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5 text-muted small">Date</dt>
+          <dd class="col-7 small">{{ sale.created_at|date:"d M Y H:i" }}</dd>
+          <dt class="col-5 text-muted small">Cashier</dt>
+          <dd class="col-7 small">{{ sale.cashier.get_full_name|default:sale.cashier.username }}</dd>
+          <dt class="col-5 text-muted small">Customer</dt>
+          <dd class="col-7 small">{{ sale.customer.name|default:"Walk-in" }}</dd>
+          <dt class="col-5 text-muted small">Payment</dt>
+          <dd class="col-7 small">{{ sale.get_payment_method_display }}</dd>
+          <dt class="col-5 text-muted small">Paid</dt>
+          <dd class="col-7 small">{{ settings.currency_symbol }}{{ sale.amount_paid|floatformat:2 }}</dd>
+          {% if sale.change_due > 0 %}
+          <dt class="col-5 text-muted small">Change</dt>
+          <dd class="col-7 small text-success">{{ settings.currency_symbol }}{{ sale.change_due|floatformat:2 }}</dd>
+          {% endif %}
+          {% if sale.transaction_id %}
+          <dt class="col-5 text-muted small">Ref</dt>
+          <dd class="col-7 small">{{ sale.transaction_id }}</dd>
+          {% endif %}
+          <dt class="col-5 text-muted small">Status</dt>
+          <dd class="col-7">
+            {% if sale.status == 'completed' %}<span class="badge badge-success">Completed</span>
+            {% elif sale.status == 'voided' %}<span class="badge badge-danger">Voided</span>
+            {% else %}<span class="badge badge-secondary">{{ sale.status }}</span>{% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+    {% if sale.status == 'completed' %}
+    <form method="post" action="{% url 'pos:void_sale' sale.id %}" onsubmit="return confirm('Void this sale and restore stock?')">
+      {% csrf_token %}
+      <button class="btn btn-outline-danger btn-block mt-2">
+        <i class="fas fa-ban mr-1"></i>Void Sale
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card { border-radius: 12px; border: none; }
+  .stat-card .card-body { padding: 1.25rem; }
+  .stat-label { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; opacity: .85; }
+  .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+  .stat-sub { font-size: .8rem; margin-top: .25rem; opacity: .75; }
+</style>
+{% endblock %}
+
+{% block page_header %}
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="font-weight-bold mb-0"><i class="fas fa-chart-line mr-2 text-primary"></i>Reports Dashboard</h4>
+  <div>
+    <a href="{% url 'reports:sales' %}" class="btn btn-outline-primary mr-2">Sales Report</a>
+    <a href="{% url 'reports:inventory' %}" class="btn btn-outline-secondary">Inventory Report</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="row mb-3">
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card stat-card" style="background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;">
+      <div class="card-body">
+        <div class="stat-label">Today's Revenue</div>
+        <div class="stat-value">{{ app_settings.currency_symbol }}{{ today_revenue|floatformat:2 }}</div>
+        <div class="stat-sub"><i class="fas fa-receipt mr-1"></i>{{ today_count }} transaction{{ today_count|pluralize }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card stat-card" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;">
+      <div class="card-body">
+        <div class="stat-label">This Week</div>
+        <div class="stat-value">{{ app_settings.currency_symbol }}{{ week_revenue|floatformat:2 }}</div>
+        <div class="stat-sub">Last 7 days</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card stat-card" style="background:linear-gradient(135deg,#d97706,#b45309);color:#fff;">
+      <div class="card-body">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value">{{ app_settings.currency_symbol }}{{ month_revenue|floatformat:2 }}</div>
+        <div class="stat-sub"><i class="fas fa-shopping-cart mr-1"></i>{{ month_count }} sales</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-3 col-md-6 mb-3">
+    <div class="card stat-card" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;">
+      <div class="card-body">
+        <div class="stat-label">All Time Revenue</div>
+        <div class="stat-value">{{ app_settings.currency_symbol }}{{ total_revenue|floatformat:2 }}</div>
+        <div class="stat-sub">Lifetime total</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Sales Chart -->
+  <div class="col-md-8 mb-3">
+    <div class="card">
+      <div class="card-header font-weight-bold d-flex justify-content-between">
+        <span><i class="fas fa-chart-bar mr-1"></i>Daily Sales (Last 7 Days)</span>
+      </div>
+      <div class="card-body">
+        <canvas id="salesChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Breakdown -->
+  <div class="col-md-4 mb-3">
+    <div class="card">
+      <div class="card-header font-weight-bold">
+        <i class="fas fa-credit-card mr-1"></i>Payment Methods (Month)
+      </div>
+      <div class="card-body">
+        {% if payment_breakdown %}
+        {% for p in payment_breakdown %}
+        <div class="mb-2">
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="font-weight-bold">{{ p.payment_method|title }}</span>
+            <span>{{ app_settings.currency_symbol }}{{ p.total|floatformat:2 }}</span>
+          </div>
+          <div class="progress" style="height:6px;">
+            {% widthratio p.total month_revenue 100 as pct %}
+            <div class="progress-bar" role="progressbar" style="width:{{ pct }}%"></div>
+          </div>
+          <div class="text-muted small text-right">{{ p.count }} transactions</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted text-center py-3">No sales this month</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Top Products -->
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header font-weight-bold">
+        <i class="fas fa-trophy mr-1 text-warning"></i>Top Products (This Month)
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>#</th><th>Product</th><th class="text-center">Units Sold</th><th class="text-right">Revenue</th></tr></thead>
+          <tbody>
+            {% for i, p in top_products|enumerate %}
+            <tr>
+              <td><span class="badge {% if forloop.counter == 1 %}badge-warning{% elif forloop.counter == 2 %}badge-secondary{% elif forloop.counter == 3 %}badge-info{% else %}badge-light text-muted{% endif %}">{{ forloop.counter }}</span></td>
+              <td class="font-weight-bold small">{{ p.product_name }}</td>
+              <td class="text-center">{{ p.qty }}</td>
+              <td class="text-right">{{ app_settings.currency_symbol }}{{ p.revenue|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center py-3 text-muted">No sales data</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Sales -->
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between font-weight-bold">
+        <span><i class="fas fa-receipt mr-1"></i>Recent Sales</span>
+        <a href="{% url 'pos:sales_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Receipt</th><th>Customer</th><th>Payment</th><th class="text-right">Total</th></tr></thead>
+          <tbody>
+            {% for sale in recent_sales %}
+            <tr>
+              <td><a href="{% url 'pos:receipt' sale.id %}" class="text-primary small">{{ sale.receipt_number }}</a></td>
+              <td class="small">{{ sale.customer.name|default:"Walk-in" }}</td>
+              <td><span class="badge badge-secondary" style="font-size:.65rem;">{{ sale.get_payment_method_display }}</span></td>
+              <td class="text-right font-weight-bold small">{{ app_settings.currency_symbol }}{{ sale.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center py-3 text-muted">No recent sales</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+const ctx = document.getElementById('salesChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: {{ daily_labels|safe }},
+    datasets: [{
+      label: 'Revenue ({{ app_settings.currency_symbol }})',
+      data: {{ daily_data|safe }},
+      backgroundColor: 'rgba(37, 99, 235, 0.8)',
+      borderRadius: 6,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: { callback: v => '{{ app_settings.currency_symbol }}' + v.toFixed(0) } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}
