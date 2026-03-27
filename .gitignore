@@ -1,0 +1,17 @@
+# Django
+db.sqlite3
+*.pyc
+__pycache__/
+*.pyo
+.env
+
+# Media uploads
+media/
+!media/.gitkeep
+
+# Static collected
+staticfiles/
+
+# OS
+.DS_Store
+Thumbs.db
